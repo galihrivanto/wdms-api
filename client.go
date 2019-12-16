@@ -33,6 +33,9 @@ type Client struct {
 	// User agent for client
 	UserAgent string
 
+	// Auth token for authorization
+	authToken string
+
 	// Optional function called after every successful request made to APIs
 	onRequestCompleted RequestCompletionCallback
 
@@ -41,51 +44,15 @@ type Client struct {
 
 	// company service
 	CompanyService CompanyService
-}
 
-// RequestCompletionCallback defines the type of the request callback function
-type RequestCompletionCallback func(*http.Request, *http.Response)
+	// department service
+	DepartmentService DepartmentService
 
-// Response wraps standard http Response with default response fields
-// which returned from wdms api
-type Response struct {
-	*http.Response
-}
+	// Area service
+	AreaService AreaService
 
-// ErrorResponse wrap standard http Response along with error code
-// and message which returned from wdms api
-type ErrorResponse struct {
-	// original response
-	Response *http.Response
-
-	// Error code
-	Code int `json:"code"`
-
-	// Description of error
-	Message string `json:"detail"`
-}
-
-// ListRequest contains common parameter for list request
-type ListRequest struct {
-	Page int `json:"page,omitempty"`
-
-	// Number of results to return per page.
-	Limit int `json:"limit,omitempty"`
-
-	// search	A search term.
-	Search string `json:"search,omitempty"`
-
-	// ordering
-	Ordering int `json:"ordering,omitempty"`
-}
-
-// ListResult contains common field from api result
-type ListResult struct {
-	Count int `json:"count"`
-
-	// next page link
-	Next     string `json:"next"`
-	Previous string `json:"previous"`
+	// Employee Service
+	EmployeeService EmployeeService
 }
 
 // Do sends an API request and returns the API response. The API response is JSON decoded and stored in the value
@@ -144,6 +111,9 @@ func NewClient(httpClient *http.Client) *Client {
 
 	c.TokenService = &tokenService{client: c}
 	c.CompanyService = &companyService{client: c}
+	c.DepartmentService = &departmentService{client: c}
+	c.AreaService = &areaService{client: c}
+	c.EmployeeService = &employeeService{client: c}
 
 	return c
 }
@@ -184,6 +154,11 @@ func SetUserAgent(ua string) ClientOpt {
 	}
 }
 
+// SetAuthToken set authorization token which used request authorization
+func (c *Client) SetAuthToken(token string) {
+	c.authToken = token
+}
+
 // NewRequest creates an API request. A relative URL can be provided in urlStr, which will be resolved to the
 // BaseURL of the Client. Relative URLS should always be specified without a preceding slash. If specified, the
 // value pointed to by body is JSON encoded and included in as the request body.
@@ -209,12 +184,64 @@ func (c *Client) NewRequest(ctx context.Context, method, urlStr string, body int
 	req.Header.Add("Content-Type", contentType)
 	req.Header.Add("Accept", contentType)
 	req.Header.Add("User-Agent", c.UserAgent)
+
+	// if auth token is set
+	// then put token as Authorization header
+	if c.authToken != "" {
+		req.Header.Add("Authorization", "JWT "+c.authToken)
+	}
+
 	return req, nil
 }
 
 // OnRequestCompleted sets the DO API request completion callback
 func (c *Client) OnRequestCompleted(rc RequestCompletionCallback) {
 	c.onRequestCompleted = rc
+}
+
+// RequestCompletionCallback defines the type of the request callback function
+type RequestCompletionCallback func(*http.Request, *http.Response)
+
+// Response wraps standard http Response with default response fields
+// which returned from wdms api
+type Response struct {
+	*http.Response
+}
+
+// ErrorResponse wrap standard http Response along with error code
+// and message which returned from wdms api
+type ErrorResponse struct {
+	// original response
+	Response *http.Response
+
+	// Error code
+	Code int `json:"code"`
+
+	// Description of error
+	Message string `json:"detail"`
+}
+
+// ListRequest contains common parameter for list request
+type ListRequest struct {
+	Page int `json:"page,omitempty"`
+
+	// Number of results to return per page.
+	Limit int `json:"limit,omitempty"`
+
+	// search	A search term.
+	Search string `json:"search,omitempty"`
+
+	// ordering
+	Ordering int `json:"ordering,omitempty"`
+}
+
+// ListResult contains common field from api result
+type ListResult struct {
+	Count int `json:"count"`
+
+	// next page link
+	Next     string `json:"next"`
+	Previous string `json:"previous"`
 }
 
 // newResponse creates a new Response for the provided http.Response

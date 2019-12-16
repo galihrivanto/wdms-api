@@ -2,17 +2,22 @@ package wdmsapi
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 )
 
 // CompanyService define available functions related to WDMS company
 type CompanyService interface {
 	List(context.Context, *CompanyListRequest) (*CompanyListResult, *Response, error)
+	Get(context.Context, int) (*Company, *Response, error)
+	Create(context.Context, *Company) (*Response, error)
+	Update(context.Context, int, *Company) (*Response, error)
+	Delete(context.Context, int) (*Response, error)
 }
 
 // Company represent company in WDMS
 type Company struct {
-	ID   string `json:"company_id"`
+	ID   int    `json:"company_id"`
 	Name string `json:"company_name"`
 }
 
@@ -21,25 +26,16 @@ type CompanyListRequest struct {
 	ListRequest
 
 	// depart_id
-	ID string `json:"depart_id,omitempty"`
+	ID int `json:"depart_id,omitempty"`
 
 	// depart_name
 	Name string `json:"depart_name,omitempty"`
 
 	// company
-	CompanyID string `json:"company,omitempty"`
+	CompanyID int `json:"company,omitempty"`
 
 	// company_name
 	CompanyName string `json:"company_name,omitempty"`
-
-	// company_id_icontains
-	CompanyIDContains string `json:"company_id_icontains,omitempty"`
-
-	// depart_id_icontains
-	DepartmentIDContains string `json:"depart_id_icontains,omitempty"`
-
-	// depart_name_icontains
-	DepartmentNameContains string `json:"depart_name_icontains,omitempty"`
 }
 
 type CompanyListResult struct {
@@ -74,4 +70,61 @@ func (s *companyService) List(ctx context.Context, req *CompanyListRequest) (*Co
 	}
 
 	return result, resp, err
+}
+
+func (s *companyService) Create(ctx context.Context, data *Company) (*Response, error) {
+	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/companies", data)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(ctx, r, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *companyService) Update(ctx context.Context, id int, data *Company) (*Response, error) {
+	r, err := s.client.NewRequest(ctx, http.MethodPut, fmt.Sprintf("/api/companies/%d", id), data)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(ctx, r, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *companyService) Delete(ctx context.Context, id int) (*Response, error) {
+	r, err := s.client.NewRequest(ctx, http.MethodDelete, fmt.Sprintf("/api/companies/%d", id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(ctx, r, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *companyService) Get(ctx context.Context, id int) (*Company, *Response, error) {
+	r, err := s.client.NewRequest(ctx, http.MethodDelete, fmt.Sprintf("/api/companies/%d", id), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	result := new(Company)
+	resp, err := s.client.Do(ctx, r, result)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return result, resp, nil
 }
