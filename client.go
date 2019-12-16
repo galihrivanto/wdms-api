@@ -53,6 +53,9 @@ type Client struct {
 
 	// Employee Service
 	EmployeeService EmployeeService
+
+	// Device service
+	IClockService IClockService
 }
 
 // Do sends an API request and returns the API response. The API response is JSON decoded and stored in the value
@@ -114,6 +117,7 @@ func NewClient(httpClient *http.Client) *Client {
 	c.DepartmentService = &departmentService{client: c}
 	c.AreaService = &areaService{client: c}
 	c.EmployeeService = &employeeService{client: c}
+	c.IClockService = &iclockService{client: c}
 
 	return c
 }

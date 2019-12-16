@@ -82,4 +82,18 @@ func main() {
 	}
 
 	log.Println(res5)
+
+	res6, _, err := c.IClockService.List(context.Background(),
+		&api.IClockListRequest{
+			ListRequest: api.ListRequest{
+				Limit: 10,
+			},
+		},
+	)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+
+	log.Println(res6)
 }
