@@ -10,15 +10,17 @@ import (
 type CompanyService interface {
 	List(context.Context, *CompanyListRequest) (*CompanyListResult, *Response, error)
 	Get(context.Context, int) (*Company, *Response, error)
-	Create(context.Context, *Company) (*Response, error)
+	Create(context.Context, *Company) (int, *Response, error)
 	Update(context.Context, int, *Company) (*Response, error)
 	Delete(context.Context, int) (*Response, error)
 }
 
 // Company represent company in WDMS
 type Company struct {
-	ID   int    `json:"company_id"`
-	Name string `json:"company_name"`
+	// surrogate key, given by system
+	ID        int    `json:"id,omitempty"`
+	CompanyID int    `json:"company_id"`
+	Name      string `json:"company_name"`
 }
 
 // CompanyListRequest contains parameters for company search api
@@ -56,7 +58,7 @@ func (s *companyService) List(ctx context.Context, req *CompanyListRequest) (*Co
 
 	// construct query string based on params
 	queries := MarshalURLQuery(req)
-	path := "/api/companies?" + queries.Encode()
+	path := "/api/companies/?" + queries.Encode()
 
 	r, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -72,18 +74,19 @@ func (s *companyService) List(ctx context.Context, req *CompanyListRequest) (*Co
 	return result, resp, err
 }
 
-func (s *companyService) Create(ctx context.Context, data *Company) (*Response, error) {
-	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/companies", data)
+func (s *companyService) Create(ctx context.Context, data *Company) (int, *Response, error) {
+	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/companies/", data)
 	if err != nil {
-		return nil, err
+		return -1, nil, err
 	}
 
-	resp, err := s.client.Do(ctx, r, nil)
+	result := new(Company)
+	resp, err := s.client.Do(ctx, r, result)
 	if err != nil {
-		return nil, err
+		return -1, nil, err
 	}
 
-	return resp, nil
+	return result.ID, resp, nil
 }
 
 func (s *companyService) Update(ctx context.Context, id int, data *Company) (*Response, error) {

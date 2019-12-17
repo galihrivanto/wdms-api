@@ -6,12 +6,19 @@ import (
 	"net/http"
 )
 
+var (
+	AdjustTypeAdd  string = "Add"
+	AdjustTypeMove string = "Move"
+)
+
 type EmployeeService interface {
 	List(context.Context, *EmployeeListRequest) (*EmployeeListResult, *Response, error)
 	Get(context.Context, int) (*Employee, *Response, error)
 	Create(context.Context, *Employee) (*Response, error)
 	Update(context.Context, int, *Employee) (*Response, error)
 	Delete(context.Context, int) (*Response, error)
+	AdjustArea(context.Context, *AdjustAreaRequest) (*Response, error)
+	AdjustDepartment(context.Context, *AdjustDepartmentRequest) (*Response, error)
 }
 
 type Employee struct {
@@ -50,6 +57,32 @@ type EmployeeListResult struct {
 	Data []Employee `json:"data"`
 }
 
+type AdjustAreaRequest struct {
+	ActionType string `json:"action_type"`
+	Ids        []int  `json:"object_ids"`
+
+	Company Number `json:"company"`
+	Areas   []int  `json:"-"`
+
+	// comma separated area name
+	Area string `json:"area"`
+
+	AdjustType string `json:"adjust_type"`
+}
+
+type AdjustDepartmentRequest struct {
+	ActionType string `json:"action_type"`
+	Ids        []int  `json:"object_ids"`
+
+	Company     Number `json:"company"`
+	Departments []int  `json:"-"`
+
+	// comma separated area name
+	Department string `json:"department"`
+
+	AdjustType string `json:"adjust_type"`
+}
+
 type employeeService struct {
 	client *Client
 }
@@ -60,7 +93,7 @@ func (s *employeeService) List(ctx context.Context, req *EmployeeListRequest) (*
 	}
 
 	queries := MarshalURLQuery(req)
-	path := "/api/employees?" + queries.Encode()
+	path := "/api/employees/?" + queries.Encode()
 
 	r, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -77,7 +110,7 @@ func (s *employeeService) List(ctx context.Context, req *EmployeeListRequest) (*
 }
 
 func (s *employeeService) Create(ctx context.Context, data *Employee) (*Response, error) {
-	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/employees", data)
+	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/employees/", data)
 	if err != nil {
 		return nil, err
 	}
@@ -131,4 +164,40 @@ func (s *employeeService) Get(ctx context.Context, id int) (*Employee, *Response
 	}
 
 	return result, resp, nil
+}
+
+func (s *employeeService) AdjustArea(ctx context.Context, data *AdjustAreaRequest) (*Response, error) {
+	if data == nil {
+		data = &AdjustAreaRequest{}
+	}
+
+	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/employees/adjust_area/", data)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(ctx, r, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *employeeService) AdjustDepartment(ctx context.Context, data *AdjustDepartmentRequest) (*Response, error) {
+	if data == nil {
+		data = &AdjustDepartmentRequest{}
+	}
+
+	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/employees/adjust_department/", data)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(ctx, r, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

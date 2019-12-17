@@ -45,7 +45,7 @@ func (s *areaService) List(ctx context.Context, req *AreaListRequest) (*AreaList
 	}
 
 	queries := MarshalURLQuery(req)
-	path := "/api/areas?" + queries.Encode()
+	path := "/api/areas/?" + queries.Encode()
 
 	r, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *areaService) List(ctx context.Context, req *AreaListRequest) (*AreaList
 }
 
 func (s *areaService) Create(ctx context.Context, data *Area) (*Response, error) {
-	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/areas", data)
+	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/areas/", data)
 	if err != nil {
 		return nil, err
 	}

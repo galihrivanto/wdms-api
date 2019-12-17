@@ -225,6 +225,22 @@ type ErrorResponse struct {
 	Message string `json:"detail"`
 }
 
+func (r *ErrorResponse) Error() string {
+	return fmt.Sprintf("%d %v", r.Response.StatusCode, r.Message)
+}
+
+// ValidationError contains field to field validation error message
+type ValidationError map[string][]string
+
+func (e ValidationError) Error() string {
+	s := ""
+	for k, v := range e {
+		s += fmt.Sprintf("%s: %v\n", k, v)
+	}
+
+	return s
+}
+
 // ListRequest contains common parameter for list request
 type ListRequest struct {
 	Page int `json:"page,omitempty"`
@@ -269,11 +285,6 @@ func DoRequestWithClient(
 	return client.Do(req)
 }
 
-func (r *ErrorResponse) Error() string {
-	return fmt.Sprintf("%v %v: %d %v",
-		r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, r.Message)
-}
-
 // CheckResponse checks the API response for errors, and returns them if present. A response is considered an
 // error if it has a status code outside the 200 range. API error responses are expected to have either no response
 // body, or a JSON response body that maps to ErrorResponse. Any other response body will be silently ignored.
@@ -284,11 +295,24 @@ func CheckResponse(r *http.Response) error {
 
 	errorResponse := &ErrorResponse{Response: r}
 	data, err := ioutil.ReadAll(r.Body)
-	if err == nil && len(data) > 0 {
-		err := json.Unmarshal(data, errorResponse)
-		if err != nil {
-			errorResponse.Message = string(data)
+	if err != nil || len(data) == 0 {
+		return errorResponse
+	}
+
+	// if error code is 400 then unmarshal to validation error
+	// otherwise unmarshal to response error
+	if r.StatusCode == 400 {
+		validationResponse := &ValidationError{}
+		err := json.Unmarshal(data, validationResponse)
+		if err == nil {
+			return validationResponse
 		}
+
+	}
+
+	err = json.Unmarshal(data, errorResponse)
+	if err != nil {
+		errorResponse.Message = string(data)
 	}
 
 	// set code

@@ -47,7 +47,7 @@ func (s *departmentService) List(ctx context.Context, req *DepartmentListRequest
 
 	// construct query string based on params
 	queries := MarshalURLQuery(req)
-	path := "/api/departments?" + queries.Encode()
+	path := "/api/departments/?" + queries.Encode()
 
 	r, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *departmentService) List(ctx context.Context, req *DepartmentListRequest
 }
 
 func (s *departmentService) Create(ctx context.Context, data *Department) (*Response, error) {
-	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/departments", data)
+	r, err := s.client.NewRequest(ctx, http.MethodPost, "/api/departments/", data)
 	if err != nil {
 		return nil, err
 	}
