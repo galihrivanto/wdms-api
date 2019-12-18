@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
-	api "github.com/gophercode/wdmsapi"
 	"log"
 	"os"
+	"time"
+
+	api "github.com/gophercode/wdmsapi"
 )
 
 func main() {
@@ -96,4 +98,24 @@ func main() {
 	}
 
 	log.Println(res6)
+
+	res7, _, err := c.TransactionService.List(context.Background(),
+		&api.TransactionListRequest{
+			ListRequest: api.ListRequest{
+				Limit: 10,
+			},
+
+			StartDate: api.Time{Time: time.Date(2019, 12, 10, 0, 0, 0, 0, time.UTC)},
+			EndDate:   api.Time{Time: time.Date(2019, 12, 11, 0, 0, 0, 0, time.UTC)},
+
+			// StartDate: api.Time{Time: time.Now().Round(24 * time.Hour)},
+			// EndDate:   api.Time{Time: time.Now().Round(24*time.Hour).AddDate(0, 0, 1)},
+		},
+	)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+
+	log.Println(res7)
 }

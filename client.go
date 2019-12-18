@@ -56,6 +56,9 @@ type Client struct {
 
 	// Device service
 	IClockService IClockService
+
+	// att service
+	TransactionService TransactionService
 }
 
 // Do sends an API request and returns the API response. The API response is JSON decoded and stored in the value
@@ -118,6 +121,7 @@ func NewClient(httpClient *http.Client) *Client {
 	c.AreaService = &areaService{client: c}
 	c.EmployeeService = &employeeService{client: c}
 	c.IClockService = &iclockService{client: c}
+	c.TransactionService = &transactionService{client: c}
 
 	return c
 }
@@ -353,6 +357,10 @@ func StreamToString(stream io.Reader) string {
 	return buf.String()
 }
 
+type URLQueryEncoder interface {
+	MarshalURLQuery() string
+}
+
 // MarshalURLQuery encode struct into url queries
 // using `json` tag as query name reference
 func MarshalURLQuery(v interface{}) (queries url.Values) {
@@ -405,45 +413,53 @@ func MarshalURLQuery(v interface{}) (queries url.Values) {
 
 		vv := value.Field(i)
 
+		// if field implement Query encoder interface
+		if encoder, ok := vv.Interface().(URLQueryEncoder); ok {
+			queries.Add(query, encoder.MarshalURLQuery())
+
+			// go to next field
+			continue
+		}
+
 		switch vv.Interface().(type) {
 		case string:
 			if vv.String() == "" && omitEmpty {
-				continue
+				break
 			}
 
 			queries.Add(query, vv.String())
-			break
+
 		case float32, float64:
 			if vv.Float() == 0.0 && omitEmpty {
-				continue
+				break
 			}
 
 			queries.Add(query, fmt.Sprintf("%f", vv.Float()))
-			break
+
 		case int, int64:
 			if vv.Int() == 0 && omitEmpty {
-				continue
+				break
 			}
 
 			queries.Add(query, fmt.Sprintf("%d", vv.Int()))
-			break
+
 		case uint, uint64:
 			if vv.Uint() == 0 && omitEmpty {
-				continue
+				break
 			}
 
 			queries.Add(query, fmt.Sprintf("%d", vv.Uint()))
-			break
+
 		case bool:
 			queries.Add(query, fmt.Sprintf("%v", vv.Bool()))
-			break
+
 		case time.Time:
 			if vv.String() == "" && omitEmpty {
-				continue
+				break
 			}
 
 			queries.Add(query, vv.Interface().(time.Time).Format(time.RFC3339Nano))
-			break
+
 		default:
 			vqueries := MarshalURLQuery(vv.Interface())
 			if len(vqueries) > 0 {

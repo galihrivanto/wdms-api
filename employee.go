@@ -152,7 +152,7 @@ func (s *employeeService) Delete(ctx context.Context, id int) (*Response, error)
 }
 
 func (s *employeeService) Get(ctx context.Context, id int) (*Employee, *Response, error) {
-	r, err := s.client.NewRequest(ctx, http.MethodDelete, fmt.Sprintf("/api/employees/%d", id), nil)
+	r, err := s.client.NewRequest(ctx, http.MethodGet, fmt.Sprintf("/api/employees/%d", id), nil)
 	if err != nil {
 		return nil, nil, err
 	}

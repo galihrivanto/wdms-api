@@ -139,7 +139,7 @@ func (s *iclockService) Delete(ctx context.Context, id int) (*Response, error) {
 }
 
 func (s *iclockService) Get(ctx context.Context, id int) (*IClock, *Response, error) {
-	r, err := s.client.NewRequest(ctx, http.MethodDelete, fmt.Sprintf("/api/iclocks/%d", id), nil)
+	r, err := s.client.NewRequest(ctx, http.MethodGet, fmt.Sprintf("/api/iclocks/%d", id), nil)
 	if err != nil {
 		return nil, nil, err
 	}

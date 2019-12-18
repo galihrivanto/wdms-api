@@ -104,7 +104,7 @@ func (s *areaService) Delete(ctx context.Context, id int) (*Response, error) {
 }
 
 func (s *areaService) Get(ctx context.Context, id int) (*Area, *Response, error) {
-	r, err := s.client.NewRequest(ctx, http.MethodDelete, fmt.Sprintf("/api/areas/%d", id), nil)
+	r, err := s.client.NewRequest(ctx, http.MethodGet, fmt.Sprintf("/api/areas/%d", id), nil)
 	if err != nil {
 		return nil, nil, err
 	}

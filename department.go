@@ -106,7 +106,7 @@ func (s *departmentService) Delete(ctx context.Context, id int) (*Response, erro
 }
 
 func (s *departmentService) Get(ctx context.Context, id int) (*Department, *Response, error) {
-	r, err := s.client.NewRequest(ctx, http.MethodDelete, fmt.Sprintf("/api/departments/%d", id), nil)
+	r, err := s.client.NewRequest(ctx, http.MethodGet, fmt.Sprintf("/api/departments/%d", id), nil)
 	if err != nil {
 		return nil, nil, err
 	}
