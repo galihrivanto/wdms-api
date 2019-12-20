@@ -37,9 +37,8 @@ func (s *inMemoryStore) Load(key string, retValue interface{}) error {
 		return ErrNotFound
 	}
 
-	// not working
 	if retValue != nil {
-		retValue = reflect.Indirect(reflect.ValueOf(v))
+		cloneValue(v, retValue)
 	}
 
 	return nil
@@ -69,4 +68,17 @@ func (s *inMemoryStore) Delete(key string) error {
 
 func NewInMemoryStore() Store {
 	return &inMemoryStore{}
+}
+
+func cloneValue(source interface{}, destin interface{}) {
+	x := reflect.ValueOf(source)
+	if x.Kind() == reflect.Ptr {
+		starX := x.Elem()
+		y := reflect.New(starX.Type())
+		starY := y.Elem()
+		starY.Set(starX)
+		reflect.ValueOf(destin).Elem().Set(y.Elem())
+	} else {
+		reflect.ValueOf(destin).Elem().Set(reflect.ValueOf(source))
+	}
 }

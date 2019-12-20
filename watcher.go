@@ -158,10 +158,6 @@ func (w *Watcher) checkDevices(ctx context.Context) error {
 
 	if result.Data != nil && len(result.Data) > 0 {
 		for _, iclock := range result.Data {
-			if iclock.SN != "BRM9181260009" {
-				continue
-			}
-
 			if err := w.fetchDeviceAttRecords(ctx, iclock); err != nil {
 				log.Println("err:", err)
 			}
