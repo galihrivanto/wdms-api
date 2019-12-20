@@ -7,7 +7,8 @@ import (
 	"os"
 	"time"
 
-	api "github.com/galihrvanto/wdms-api"
+	api "github.com/galihrivanto/wdms-api"
+	"github.com/galihrivanto/wdms-api/store"
 )
 
 const (
@@ -18,10 +19,9 @@ const (
 
 func main() {
 	var (
-		baseurl   string
-		username  string
-		password  string
-		startDate string
+		baseurl  string
+		username string
+		password string
 	)
 
 	flag.StringVar(&baseurl, "baseurl", "https://wdms.magicsoft-asia.com/api", "wdms login username")
@@ -38,17 +38,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	dt, err := time.Parse("2006-01-02", startDate)
-	if err != nil {
-		dt = time.Now()
-	}
-
-	w := NewWatcher(c, &api.WatcherOption{
-		Usename: username,
-		Password: password,
-		TokenRefreshPeriod: 1 * time.Hour,
-		DeviceCheckPeriod: 5 * time.Second,
-	})
+	w := api.NewWatcher(c,
+		store.NewInMemoryStore(),
+		&api.WatcherOption{
+			Username:           username,
+			Password:           password,
+			TokenRefreshPeriod: 1 * time.Hour,
+			DeviceCheckPeriod:  5 * time.Second,
+			OnAttendanceReceived: func(att api.Transaction, iclock api.IClock) {
+				log.Println(att)
+			},
+		})
 
 	w.Watch(context.Background())
 }

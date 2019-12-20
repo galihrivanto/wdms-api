@@ -45,6 +45,7 @@ type IClock struct {
 	FWVersion        string             `json:"fw_version,omitempty"`
 	CompanyName      string             `json:"company_name,omitempty"`
 	IPAddress        string             `json:"ip_address"`
+	Timezone         int                `json:"timezone"`
 }
 
 func (i IClock) IsMaster() bool {

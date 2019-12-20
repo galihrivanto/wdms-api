@@ -33,7 +33,7 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 		str += ":00"
 	}
 
-	t.Time, err = time.ParseInLocation(timeFormat, str, t.location())
+	t.Time, err = time.Parse(timeFormat, str)
 
 	return err
 }

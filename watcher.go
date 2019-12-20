@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/galihrivanto/runner"
+	"github.com/galihrivanto/wdms-api/store"
 )
 
 // DeviceStatusChanged is callback whenever
@@ -19,7 +20,7 @@ type DeviceStatusChanged func(IClock, bool)
 
 // AttendanceReceived is callback when watcher
 // received new attendance record
-type AttendanceReceived func(Transaction)
+type AttendanceReceived func(Transaction, IClock)
 
 // Device represent biometric device
 // which currently being watched
@@ -28,6 +29,7 @@ type Device struct {
 
 	// last attendance records
 	LastAttDate Time
+	LastAttID   int
 }
 
 // WatcherOption provide watcher setting
@@ -47,7 +49,7 @@ type WatcherOption struct {
 // Watcher watch WDMS api for data changes
 type Watcher struct {
 	// lock
-	mu *sync.Mutex
+	mu sync.Mutex
 
 	client  *Client
 	options *WatcherOption
@@ -56,14 +58,17 @@ type Watcher struct {
 	token string
 
 	// internal list of registered devices
-	devices sync.Map
+	devices store.Store
 }
 
 func (w *Watcher) setToken(token string) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	w.client.SetAuthToken(token)
+	if w.client != nil {
+		w.client.SetAuthToken(token)
+	}
+
 	w.token = token
 }
 
@@ -99,13 +104,12 @@ func (w *Watcher) fetchDeviceAttRecords(ctx context.Context, iclock IClock) erro
 		IClock: iclock,
 
 		// set default att time, from device last sync
-		LastAttDate: Time{Time: time.Now(), Offset: 8},
+		LastAttDate: Time{Time: time.Now(), Offset: iclock.Timezone},
 	}
 
-	v, loaded := w.devices.LoadOrStore(iclock.SN, device)
-	if loaded {
-		// cast v to device
-		device, _ = v.(Device)
+	_, err := w.devices.LoadOrStore(iclock.SN, &device)
+	if err != nil {
+		return err
 	}
 
 	// take 10 records at one time
@@ -115,7 +119,7 @@ func (w *Watcher) fetchDeviceAttRecords(ctx context.Context, iclock IClock) erro
 		},
 		SN:        iclock.SN,
 		StartDate: device.LastAttDate,
-		EndDate:   Time{Time: time.Now(), Offset: 8},
+		EndDate:   Time{Time: time.Now().Truncate(24*time.Hour).AddDate(0, 0, 1), Offset: iclock.Timezone},
 	})
 	if err != nil {
 		return err
@@ -124,11 +128,19 @@ func (w *Watcher) fetchDeviceAttRecords(ctx context.Context, iclock IClock) erro
 	// record last att
 	if len(result.Data) > 0 {
 		for _, att := range result.Data {
-			fmt.Println(att.Pin, att.SN, att.Verify, att.CreateTime.Time)
+			if att.ID > device.LastAttID {
+				// trigger appropiate callback
+				if w.options.OnAttendanceReceived != nil {
+					w.options.OnAttendanceReceived(att, iclock)
+				}
+			}
 		}
 
-		device.LastAttDate = result.Data[len(result.Data)-1].Time
+		device.LastAttDate.Time = result.Data[0].Time.Time
+		device.LastAttID = result.Data[0].ID
+
 		w.devices.Store(iclock.SN, device)
+
 	}
 
 	return nil
@@ -146,6 +158,10 @@ func (w *Watcher) checkDevices(ctx context.Context) error {
 
 	if result.Data != nil && len(result.Data) > 0 {
 		for _, iclock := range result.Data {
+			if iclock.SN != "BRM9181260009" {
+				continue
+			}
+
 			if err := w.fetchDeviceAttRecords(ctx, iclock); err != nil {
 				log.Println("err:", err)
 			}
@@ -199,13 +215,14 @@ func (w *Watcher) Watch(root context.Context) {
 }
 
 // NewWatcher initialize new wdms watcher
-func NewWatcher(client *Client, options *WatcherOption) *Watcher {
+func NewWatcher(client *Client, storage store.Store, options *WatcherOption) *Watcher {
 	if options == nil {
 		options = &WatcherOption{}
 	}
 
 	return &Watcher{
 		client:  client,
+		devices: storage,
 		options: options,
 	}
 }
