@@ -129,6 +129,9 @@ func (w *Watcher) fetchDeviceAttRecords(ctx context.Context, iclock IClock) erro
 	if len(result.Data) > 0 {
 		for _, att := range result.Data {
 			if att.ID > device.LastAttID {
+				// set timezone offset based on device setting
+				att.Time.Offset = iclock.Timezone
+
 				// trigger appropiate callback
 				if w.options.OnAttendanceReceived != nil {
 					w.options.OnAttendanceReceived(att, iclock)
@@ -136,7 +139,7 @@ func (w *Watcher) fetchDeviceAttRecords(ctx context.Context, iclock IClock) erro
 			}
 		}
 
-		device.LastAttDate.Time = result.Data[0].Time.Time
+		device.LastAttDate.Time = result.Data[0].CreateTime.Time
 		device.LastAttID = result.Data[0].ID
 
 		w.devices.Store(iclock.SN, device)

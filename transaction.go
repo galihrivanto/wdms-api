@@ -38,6 +38,7 @@ type Transaction struct {
 	AreaName       string     `json:"area_name"`
 	DepartmentName string     `json:"depart_name"`
 	AttPhoto       string     `json:"att_photo"`
+	Status         string     `json:"status"`
 	Time           Time       `json:"time"`
 	CreateTime     Time       `json:"createtime"`
 }
